@@ -12,9 +12,8 @@ import java.awt.event.KeyListener;
  *
  * @author Tyba
  */
+public abstract class MarioListener implements GLEventListener, KeyListener {
 
-public abstract class AnimListener implements GLEventListener, KeyListener {
- 
     protected String assetsFolderName = "Assets//Mario";
-    
+
 }

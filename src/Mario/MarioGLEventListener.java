@@ -1,4 +1,5 @@
 package Mario;
+
 import Texture.TextureReader;
 
 import javax.media.opengl.GL;
@@ -7,12 +8,12 @@ import javax.media.opengl.glu.GLU;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 
-public class AnimGLEventListener extends AnimListener {
-    
-    String textureName = "back2.png";
+public class MarioGLEventListener extends MarioListener {
+
+    String textureName = "back-in.jpeg";
     TextureReader.Texture texture;
     int textureIndex[] = new int[1];
-    
+
     /*
      5 means gun in array pos
      x and y coordinate for gun 
@@ -21,38 +22,38 @@ public class AnimGLEventListener extends AnimListener {
 
         GL gl = gld.getGL();
         gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);    //This Will Clear The Background Color To Black
-        
+
         gl.glEnable(GL.GL_TEXTURE_2D);  // Enable Texture Mapping
         gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-        
+
         //number of textures,array to hold the indeces
         gl.glGenTextures(1, textureIndex, 0);
-        
+
         try {
-            texture = TextureReader.readTexture(assetsFolderName + "//" + textureName , true);
+            texture = TextureReader.readTexture(assetsFolderName + "//" + textureName, true);
             gl.glBindTexture(GL.GL_TEXTURE_2D, textureIndex[0]);
 
 //                mipmapsFromPNG(gl, new GLU(), texture[i]);
             new GLU().gluBuild2DMipmaps(
-                GL.GL_TEXTURE_2D,
-                GL.GL_RGBA, // Internal Texel Format,
-                texture.getWidth(), texture.getHeight(),
-                GL.GL_RGBA, // External format from image,
-                GL.GL_UNSIGNED_BYTE,
-                texture.getPixels() // Imagedata
-                );
-        } catch( IOException e ) {
-          System.out.println(e);
-          e.printStackTrace();
+                    GL.GL_TEXTURE_2D,
+                    GL.GL_RGBA, // Internal Texel Format,
+                    texture.getWidth(), texture.getHeight(),
+                    GL.GL_RGBA, // External format from image,
+                    GL.GL_UNSIGNED_BYTE,
+                    texture.getPixels() // Imagedata
+            );
+        } catch (IOException e) {
+            System.out.println(e);
+            e.printStackTrace();
         }
     }
-    
+
     public void display(GLAutoDrawable gld) {
 
         GL gl = gld.getGL();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT);       //Clear The Screen And The Depth Buffer
-        gl.glLoadIdentity(); 
-        
+        gl.glLoadIdentity();
+
         DrawBackground(gl);
     }
 
@@ -61,23 +62,23 @@ public class AnimGLEventListener extends AnimListener {
 
     public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) {
     }
-    
-    public void DrawBackground(GL gl){
+
+    public void DrawBackground(GL gl) {
         gl.glEnable(GL.GL_BLEND);	// Turn Blending On
-        gl.glBindTexture(GL.GL_TEXTURE_2D, textureIndex[0]);	
+        gl.glBindTexture(GL.GL_TEXTURE_2D, textureIndex[0]);
 
         gl.glBegin(GL.GL_QUADS);
         // Front Face
-            gl.glTexCoord2f(0.0f, 0.0f);
-            gl.glVertex3f(-1.0f, -1.0f, -1.0f);
-            gl.glTexCoord2f(1.0f, 0.0f);
-            gl.glVertex3f(1.0f, -1.0f, -1.0f);
-            gl.glTexCoord2f(1.0f, 1.0f);
-            gl.glVertex3f(1.0f, 1.0f, -1.0f);
-            gl.glTexCoord2f(0.0f, 1.0f);
-            gl.glVertex3f(-1.0f, 1.0f, -1.0f);
+        gl.glTexCoord2f(0.0f, 0.0f);
+        gl.glVertex3f(-1.0f, -1.0f, -1.0f);
+        gl.glTexCoord2f(1.0f, 0.0f);
+        gl.glVertex3f(1.0f, -1.0f, -1.0f);
+        gl.glTexCoord2f(1.0f, 1.0f);
+        gl.glVertex3f(1.0f, 1.0f, -1.0f);
+        gl.glTexCoord2f(0.0f, 1.0f);
+        gl.glVertex3f(-1.0f, 1.0f, -1.0f);
         gl.glEnd();
-        
+
         gl.glDisable(GL.GL_BLEND);
     }
 
@@ -95,5 +96,5 @@ public class AnimGLEventListener extends AnimListener {
     public void keyReleased(KeyEvent ke) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
 }
