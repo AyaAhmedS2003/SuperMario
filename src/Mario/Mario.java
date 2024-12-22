@@ -13,7 +13,6 @@ public class Mario extends JFrame {
     private final MarioGLEventListener listener;
     private final GLCanvas glcanvas;
 
-
     public Mario(String userName, String secondPlayerName) {
         CurGame gameState = new CurGame();
         gameState.newGame();
@@ -25,6 +24,8 @@ public class Mario extends JFrame {
         listener = new MarioGLEventListener(this, gameState);
         glcanvas = new GLCanvas();
         glcanvas.addGLEventListener(listener);
+        glcanvas.addKeyListener(listener);
+
         setupFrame();
     }
 
@@ -34,6 +35,7 @@ public class Mario extends JFrame {
 
     private void setupFrame() {
         getContentPane().add(glcanvas, BorderLayout.CENTER);
+
         animator = new FPSAnimator(15);
         animator.add(glcanvas);
         animator.start();

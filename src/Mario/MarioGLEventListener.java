@@ -1,9 +1,7 @@
 package Mario;
 
-import CONST.Consts;
 import Texture.TextureReader;
 import com.sun.opengl.util.GLUT;
-import models.GameObj;
 import models.CurGame;
 import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
@@ -12,25 +10,49 @@ import javax.media.opengl.glu.GLU;
 import javax.swing.*;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.BitSet;
-import static CONST.Consts.*;
 
-public class MarioGLEventListener extends Key implements GLEventListener {
+public class MarioGLEventListener extends MarioListener implements GLEventListener {
+
+    public BitSet keyBits = new BitSet(256);
+    
+        
+    
     JFrame gameJframe;
     CurGame gameState;
     GLUT g = new GLUT();
-    //String textureName = "back-in.jpeg";
+
+    /* Start Of CONSTANTS */
+    public static int y = 15;
+    public static int maxWidth = 100;
+    public static int maxHeight = 100;
+    public static String textureNames[] = {
+        "back-in.jpeg",
+        "mario1.png",
+        "mario2.png",
+        "mario3.png",
+        "mario1.png",
+         "mario1.png",
+    };
+
+    public static String assetsFolderName = "Assets/Mario";
+
+    // Add these variables in your class
+    boolean isJumping = false;
+    int jumpSpeed = 5;  // Adjust for jump height
+    int gravity = 1;    // Adjust for fall speed
+    int jumpHeight = 20; // Adjust for max jump height
+    int initialY = y;   // To remember the initial Y position before the jump
+
+    /* End Of CONSTANTS */
     TextureReader.Texture[] texture = new TextureReader.Texture[textureNames.length];
     int[] textures = new int[textureNames.length];
+
     public MarioGLEventListener(JFrame gameJframe, CurGame initialGameState) {
         this.gameJframe = gameJframe;
         this.gameState = initialGameState;
     }
-    /*
-     5 means gun in array pos
-     x and y coordinate for gun 
-     */
+
     public void init(GLAutoDrawable gld) {
 
         GL gl = gld.getGL();
@@ -39,15 +61,12 @@ public class MarioGLEventListener extends Key implements GLEventListener {
         gl.glEnable(GL.GL_TEXTURE_2D);  // Enable Texture Mapping
         gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
 
-        //number of textures,array to hold the indeces
-
         gl.glGenTextures(textureNames.length, textures, 0);
         for (int i = 0; i < textureNames.length; i++)
             try {
             texture[i] = TextureReader.readTexture(assetsFolderName + "//" + textureNames[i], true);
             gl.glBindTexture(GL.GL_TEXTURE_2D, textures[i]);
 
-//                mipmapsFromPNG(gl, new GLU(), texture[i]);
             new GLU().gluBuild2DMipmaps(
                     GL.GL_TEXTURE_2D,
                     GL.GL_RGBA, // Internal Texel Format,
@@ -63,47 +82,36 @@ public class MarioGLEventListener extends Key implements GLEventListener {
     }
 
     public void display(GLAutoDrawable gld) {
-
         GL gl = gld.getGL();
-        gl.glClear(GL.GL_COLOR_BUFFER_BIT);       //Clear The Screen And The Depth Buffer
+        gl.glClear(GL.GL_COLOR_BUFFER_BIT);
         gl.glLoadIdentity();
 
         DrawBackground(gl);
-
-
-    DrawSprite(gl, this.gameState.xMario, 15, this.gameState.marioIdx, 1f, 0);
+        DrawSprite(gl, this.gameState.xMario, y, this.gameState.marioIdx, 1f, 0);
 
         if (!this.gameState.paused) {
-        this.gameState.Timer += 1;
-        handleKeyPress();
-        responeEnemy();
-        move();
-//            Collisions.destroy(this);
-//            Collisions.remove(this);
-    }
- gl.glRasterPos2f(-.8f, .9f);
-        g.glutBitmapString(5, "Score ");
-        g.glutBitmapString
-                (5, Integer.toString(this.gameState.getCurrentPlayerScore()));
+            this.gameState.Timer += 1;
+            handleKeyPress();
+            responeEnemy();
+            move(); // Ensure move is called here
+        }
 
-        gl.glRasterPos2f(-.8f, .8f);
-        g.glutBitmapString(5, "Timer  ");
-        g.glutBitmapString(5, Long.toString(this.gameState.Timer / 15));
-
-        gl.glRasterPos2f(-.8f, .7f);
-        g.glutBitmapString(5, "lives  ");
-        g.glutBitmapString(5, Integer.toString(this.gameState.getCurrentPlayerLives()));
+        gl.glRasterPos2f(-0.8f, 0.9f);
+        g.glutBitmapString(5, "Score: " + this.gameState.getCurrentPlayerScore());
+        gl.glRasterPos2f(-0.4f, 0.9f);
+        g.glutBitmapString(5, "Timer: " + (this.gameState.Timer / 15));
+        gl.glRasterPos2f(0.3f, 0.9f);
+        g.glutBitmapString(5, "Lives: " + this.gameState.getCurrentPlayerLives());
 
         gl.glEnd();
-
-
-}
+    }
 
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
     }
 
     public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) {
     }
+
     public void DrawSprite(GL gl, int x, int y, int index, float scale, float angle) {
         gl.glEnable(GL.GL_BLEND);
         gl.glBindTexture(GL.GL_TEXTURE_2D, textures[index]); // Turn Blending On
@@ -130,36 +138,70 @@ public class MarioGLEventListener extends Key implements GLEventListener {
         gl.glDisable(GL.GL_BLEND);
     }
 
+    public float backgroundOffset = 0.0f;  // Offset for scrolling background
+public float scrollSpeed = 0.01f;  // Speed of background scrolling
 
-    public void DrawBackground(GL gl) {
-        gl.glEnable(GL.GL_BLEND);
-        gl.glBindTexture(GL.GL_TEXTURE_2D, textures[0]); // Turn Blending On
+public void DrawBackground(GL gl) {
+    gl.glEnable(GL.GL_BLEND);
+    gl.glBindTexture(GL.GL_TEXTURE_2D, textures[0]); // Turn Blending On
 
-        gl.glPushMatrix();
-        gl.glBegin(GL.GL_QUADS);
-        // Front Face
-        gl.glTexCoord2f(0.0f, 0.0f);
-        gl.glVertex3f(-1.0f, -1.0f, -1.0f);
-        gl.glTexCoord2f(1.0f, 0.0f);
-        gl.glVertex3f(1.0f, -1.0f, -1.0f);
-        gl.glTexCoord2f(1.0f, 1.0f);
-        gl.glVertex3f(1.0f, 1.0f, -1.0f);
-        gl.glTexCoord2f(0.0f, 1.0f);
-        gl.glVertex3f(-1.0f, 1.0f, -1.0f);
-        gl.glEnd();
-        gl.glPopMatrix();
+    gl.glPushMatrix();
+    gl.glBegin(GL.GL_QUADS);
 
-        gl.glDisable(GL.GL_BLEND);
+    // Draw the first segment of the background
+    gl.glTexCoord2f(backgroundOffset, 0.0f);
+    gl.glVertex3f(-1.0f, -1.0f, -1.0f);
+    gl.glTexCoord2f(1.0f + backgroundOffset, 0.0f);
+    gl.glVertex3f(1.0f, -1.0f, -1.0f);
+    gl.glTexCoord2f(1.0f + backgroundOffset, 1.0f);
+    gl.glVertex3f(1.0f, 1.0f, -1.0f);
+    gl.glTexCoord2f(backgroundOffset, 1.0f);
+    gl.glVertex3f(-1.0f, 1.0f, -1.0f);
+
+    // Draw the second segment to create a seamless looping effect
+    gl.glTexCoord2f(backgroundOffset - 1.0f, 0.0f);
+    gl.glVertex3f(1.0f, -1.0f, -1.0f);
+    gl.glTexCoord2f(backgroundOffset, 0.0f);
+    gl.glVertex3f(3.0f, -1.0f, -1.0f);
+    gl.glTexCoord2f(backgroundOffset, 1.0f);
+    gl.glVertex3f(3.0f, 1.0f, -1.0f);
+    gl.glTexCoord2f(backgroundOffset - 1.0f, 1.0f);
+    gl.glVertex3f(1.0f, 1.0f, -1.0f);
+
+    gl.glEnd();
+    gl.glPopMatrix();
+
+    // Update the background offset for the next frame
+    backgroundOffset += scrollSpeed;
+    if (backgroundOffset > 1.0f) {
+        backgroundOffset -= 1.0f;  // Reset the offset for seamless looping
+    }
+
+    gl.glDisable(GL.GL_BLEND);
+}
+
+
+    public boolean isKeyPressed(int keyCode) {
+        return keyBits.get(keyCode);
     }
 
     public void handleKeyPress() {
-        if (isKeyPressed(KeyEvent.VK_SPACE)) {// shooooot.
-
+        if (isKeyPressed(KeyEvent.VK_SPACE) && !isJumping) {
+            isJumping = true;
+            initialY = y; // Store the initial Y position before the jump
         }
-//        System.out.println(isKeyPressed(KeyEvent.VK_RIGHT));
+
         if (isKeyPressed(KeyEvent.VK_RIGHT)) {
-            if (this.gameState.xMario <= 95) {
+            if (!isJumping && this.gameState.xMario < maxWidth - 10) {
                 this.gameState.xMario += 1;
+                this.gameState.marioIdx++;
+                this.gameState.marioIdx %= 5;
+                this.gameState.marioIdx++;
+            }
+        }
+        if (isKeyPressed(KeyEvent.VK_LEFT)) {
+            if (!isJumping && this.gameState.xMario > 0) {
+                this.gameState.xMario -= 1;
                 this.gameState.marioIdx++;
                 this.gameState.marioIdx %= 5;
                 this.gameState.marioIdx++;
@@ -168,26 +210,47 @@ public class MarioGLEventListener extends Key implements GLEventListener {
 
     }
 
-    private void move() {
+    boolean isAscending = false;
 
+    private void move() {
+        if (isJumping) {
+            if (isAscending) {
+                if (y < initialY + jumpHeight) {
+                    y += jumpSpeed; // Mario goes up
+                } else {
+                    isAscending = false; // Start descending
+                }
+            } else {
+                if (y > initialY) {
+                    y -= jumpSpeed; // Mario comes down
+                } else {
+                    y = initialY; // Ensure Mario doesn't go below ground level
+                    isJumping = false; // End the jump
+                    isAscending = true; // Reset to start ascending next time
+                    jumpSpeed = 5; // Reset jump speed
+                }
+            }
+        }
     }
 
     private void responeEnemy() {
 
     }
+
     @Override
     public void keyTyped(KeyEvent ke) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
     public void keyPressed(KeyEvent ke) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        int keyCode = ke.getKeyCode();
+        keyBits.set(keyCode);
     }
 
     @Override
     public void keyReleased(KeyEvent ke) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        int keyCode = ke.getKeyCode();
+        keyBits.clear(keyCode);
     }
 
 }
